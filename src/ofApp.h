@@ -18,6 +18,7 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
+        unsigned char* invisible(ofVideoGrabber vid);
     
         ofImage  img;
         static const int CAPMAX = 30;
@@ -33,6 +34,7 @@ class ofApp : public ofBaseApp{
         int             capNum;
         string          mashiText;
         bool            mashiFlg;
+        unsigned char* mp;
         ofImage         cap[10][CAPMAX];
         ofImage         sato;
         ofImage         mashi;

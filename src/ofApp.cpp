@@ -1,7 +1,6 @@
 #include "ofApp.h"
 
 int frame;
-bool capflg;
 int capX = 0;
 int capY = 0;
 //--------------------------------------------------------------
@@ -52,13 +51,13 @@ void ofApp::draw() {
     ofSetColor(255);
     sato.draw(0,0);
     //最初初期化してないの描画してるかも
-    img.draw(0,0);
+    if(img.bAllocated()){img.draw(0,0);}
     //vidGrabber.draw(0, 0);
     if (mashiFlg) {
         cap[mashiNum][mashiCount].draw(0,0);
         mashi.draw( 0, 0);
         for(int i = 0; i < 10; i++){
-            cap[i][mashiCount].draw(camWidth*i,camHeight);
+            cap[i][mashiCount].draw(camWidth/5*i, camHeight, camWidth/5, camHeight/5);
         }
         mashiCount += 1;
         if (mashiCount >= CAPMAX) {
@@ -94,6 +93,7 @@ void ofApp::draw() {
     if(capCount >= CAPMAX) {
         capCount = 0;
         capNum < 9 ? capNum++ : capNum = 0;
+        
     }
     //透過した奴をimg(本体)に代入
     img.setFromPixels(mp,camWidth,camHeight,OF_IMAGE_COLOR_ALPHA);
@@ -106,6 +106,7 @@ void ofApp::draw() {
 //        capb[capbCount].setFromPixels(mp, camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
 //        capbCount++;
 //        if(capbCount >= CAPMAX) {
+    
 //            capbFlg = false;
 //            capbCount = 0;
 //        }
@@ -150,8 +151,6 @@ void ofApp::mouseDragged(int x, int y, int button) {
 void ofApp::mousePressed(int x, int y, int button) {
     
     clickColor = img.getColor(x , y);
-    
-    
 
 }
 
