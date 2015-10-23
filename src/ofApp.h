@@ -35,7 +35,5 @@ class ofApp : public ofBaseApp{
         bool            mashiFlg;
         ofImage         cap[10][CAPMAX];
         ofImage         sato;
-        ofImage         mashi;
         ofColor         clickColor;
-    ofImage mashi2;
 };

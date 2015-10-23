@@ -1,7 +1,7 @@
 #include "ofApp.h"
 
 int frame;
-bool capflg;
+bool f = true;
 int capX = 0;
 int capY = 0;
 //--------------------------------------------------------------
@@ -19,7 +19,7 @@ void ofApp::setup() {
     capCount = 0;
     mashiNum = 0;
     mashiCount = 0;
-    mashiFlg = false;
+    mashiFlg = true;
     mashiText = "image_";
     clickColor.r = 0;
     clickColor.g = 200;
@@ -33,15 +33,6 @@ void ofApp::setup() {
 void ofApp::update() {
     
     vidGrabber.update();
-    
-    if (frame >= CAPMAX * 3) {
-        
-        frame = 0;
-        mashiNum = rand() % 10;
-//        capX = rand()%camWidth;
-//        capY = rand()%camHeight;
-    }
-    
 }
 
 //--------------------------------------------------------------
@@ -52,17 +43,29 @@ void ofApp::draw() {
     ofSetColor(255);
     sato.draw(0,0);
     //最初初期化してないの描画してるかも
-    img.draw(0,0);
+    if(img.bAllocated()){img.draw(0,0);}
     //vidGrabber.draw(0, 0);
-    if (mashiFlg) {
+    
+    if (cap[mashiNum][mashiCount].bAllocated()) {
         cap[mashiNum][mashiCount].draw(0,0);
-        mashi.draw( 0, 0);
-        for(int i = 0; i < 10; i++){
-            cap[i][mashiCount].draw(camWidth*i,camHeight);
-        }
         mashiCount += 1;
-        if (mashiCount >= CAPMAX) {
+        
+        // 過去の映像表示
+        for(int i=0; i<5; i++){
+            for(int j=0; j<2; j++){
+                if(cap[i+5*j][mashiCount].bAllocated()){
+                    cap[i+5*j][mashiCount].draw(camWidth/5*i, camHeight+camHeight/5*j, camWidth/5, camHeight/5);
+                }
+            }
+        }
+
+        if (mashiCount >= CAPMAX-1) {
             mashiCount = 0;
+            if(mashiNum == 9){
+                mashiNum = 0;
+            }else{
+            mashiNum++;
+            }
         }
     }
     
@@ -70,6 +73,7 @@ void ofApp::draw() {
     unsigned char* mp;
     mp = (unsigned char*)malloc(camWidth * camHeight * 4);
     
+    //mpに現在フレームを透過して代入
     if (img.bAllocated()) {
         for (int y = 0; y < camHeight; y++) {
             for (int x = 0; x < camWidth; x++) {
@@ -91,25 +95,24 @@ void ofApp::draw() {
             }
         }
     }
-    if(capCount >= CAPMAX) {
-        capCount = 0;
-        capNum < 9 ? capNum++ : capNum = 0;
-    }
+
     //透過した奴をimg(本体)に代入
     img.setFromPixels(mp,camWidth,camHeight,OF_IMAGE_COLOR_ALPHA);
+    
     //透過した奴をcap配列(分身)に代入
     cap[capNum][capCount].setFromPixels(mp, camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
     capCount++;
-    
-    
-//    if(capbFlg) {
-//        capb[capbCount].setFromPixels(mp, camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
-//        capbCount++;
-//        if(capbCount >= CAPMAX) {
-//            capbFlg = false;
-//            capbCount = 0;
-//        }
-//    }
+
+    //30フレームごとに次のバッファへ。最大10
+    if(capCount >= CAPMAX) {
+        if(capNum == 9){
+            capNum = 0;
+        }else{
+            capNum++;
+        }
+        capCount = 0;
+    }
+
     free(mp);
     //ofDisableAlphaBlending();
     frame++;
@@ -118,13 +121,8 @@ void ofApp::draw() {
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
     
-//    if(key == 'c') {
-//        capFlg = true;
-//    }
     if(key == 'v') {
         mashiFlg = true;
-    }
-    if(key == 'z'){
     }
     if(key == 'd') {
         mashiFlg = false;
@@ -151,8 +149,6 @@ void ofApp::mousePressed(int x, int y, int button) {
     
     clickColor = img.getColor(x , y);
     
-    
-
 }
 
 //--------------------------------------------------------------
