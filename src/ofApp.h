@@ -11,7 +11,7 @@ class ofApp : public ofBaseApp{
 
 		void keyPressed(int key);
 		void keyReleased(int key);
-		void mouseMoved(int x, int y );
+		void mouseMoved(int x, int y);
 		void mouseDragged(int x, int y, int button);
 		void mousePressed(int x, int y, int button);
 		void mouseReleased(int x, int y, int button);
@@ -19,21 +19,27 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
     
+    
         ofImage  img;
-        static const int CAPMAX = 30;
+        static const int CAPMAX = 8;
+        static const int COLNUM = 10;
         ofVideoGrabber  vidGrabber;
         ofTexture       videoTexture;
         int             camWidth;
         int             camHeight;
         bool            capFlg;
-        bool            convertFlg;
         int             capCount;
         int             mashiNum;
         int             mashiCount;
         int             capNum;
-        string          mashiText;
-        bool            mashiFlg;
-        ofImage         cap[10][CAPMAX];
+        bool            clickFlg;
+        ofImage         cap[30][CAPMAX];
         ofImage         sato;
-        ofColor         clickColor;
+        ofColor         eraseColor[COLNUM];
+        ofColor         drawColor[COLNUM];
+        ofPoint         erasePos[COLNUM];
+        ofPoint         drawPos[COLNUM];
+        int             eraseId;
+        int             drawId;
+        int             threshold;
 };

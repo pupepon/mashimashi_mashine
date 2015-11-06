@@ -1,9 +1,7 @@
 #include "ofApp.h"
 
-int frame;
-bool f = true;
-int capX = 0;
-int capY = 0;
+
+
 //--------------------------------------------------------------
 void ofApp::setup() {
     
@@ -19,11 +17,16 @@ void ofApp::setup() {
     capCount = 0;
     mashiNum = 0;
     mashiCount = 0;
-    mashiFlg = true;
-    mashiText = "image_";
-    clickColor.r = 0;
-    clickColor.g = 200;
-    clickColor.b = 0;
+    eraseId = 0;
+    drawId = 0;
+    clickFlg = true;
+    threshold = 30;
+    for(int i=0; i<COLNUM; i++){
+        eraseColor[i] = ofColor(0,100+i*5,0);
+        drawColor[i] = ofColor(0,0,0);
+        erasePos[i] = ofPoint(0,0);
+        erasePos[i] = ofPoint(0,0);
+    }
     capNum = 0;
    // cap.allocate(camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
   
@@ -47,7 +50,7 @@ void ofApp::draw() {
     //vidGrabber.draw(0, 0);
     
     if (cap[mashiNum][mashiCount].bAllocated()) {
-        cap[mashiNum][mashiCount].draw(0,0);
+        //cap[mashiNum][mashiCount].draw(0,0);
         mashiCount += 1;
         
         // 過去の映像表示
@@ -55,6 +58,7 @@ void ofApp::draw() {
             for(int j=0; j<2; j++){
                 if(cap[i+5*j][mashiCount].bAllocated()){
                     cap[i+5*j][mashiCount].draw(camWidth/5*i, camHeight+camHeight/5*j, camWidth/5, camHeight/5);
+                    cap[i+5*j][mashiCount].draw(0,0);
                 }
             }
         }
@@ -68,7 +72,14 @@ void ofApp::draw() {
             }
         }
     }
-    
+    for(int i =0; i<COLNUM/5; i++){
+        for(int j = 0; j<5; j++){
+            ofSetColor(eraseColor[i*5+j]);
+            ofRect(camWidth+80*j,0+i*50,50,50);
+            ofSetColor(drawColor[i*5+j]);
+            ofRect(camWidth+80*j,300+i*50,50,50);
+        }
+    }
     unsigned char* cp = vidGrabber.getPixels();
     unsigned char* mp;
     mp = (unsigned char*)malloc(camWidth * camHeight * 4);
@@ -79,23 +90,31 @@ void ofApp::draw() {
             for (int x = 0; x < camWidth; x++) {
                 ofColor c = img.getColor(x, y);
                 ofSetColor(c.r, c.g, c.b);
+                mp[(camWidth * y + x) * 4 + 2] = cp[(camWidth * y + x) * 3 + 3];
                 mp[(camWidth * y + x) * 4 + 2] = cp[(camWidth * y + x) * 3 + 2];
                 mp[(camWidth * y + x) * 4 + 1] = cp[(camWidth * y + x) * 3 + 1];
                 mp[(camWidth * y + x) * 4] = cp[(camWidth * y + x) * 3];
-                if (((c.g > c.r && c.g > c.b ) && (c.g-c.r > 30)) ||
-                    (!(abs(c.r-clickColor.r) > 30) && !(abs(c.g-clickColor.g) > 30) && !(abs(c.b-clickColor.b) > 30))) {
-                    //ofSetColor(0, 0, 0, 0);
-                    mp[(camWidth * y + x) * 4 + 3] = 0;
-                    //ofRect(camWidth+ x, y, 1, 1);
-                } else {
-                    //ofSetColor(c.r, c.g, c.b);
-                    mp[(camWidth * y + x) * 4 + 3] = 255;
-                    //ofRect(camWidth+ x, y, 1, 1);
+                //指定色を透過
+                for(int i = 0; i<COLNUM; i++){
+                        if(((c.g > c.r && c.g > c.b ) && (c.g-c.r > 30)) ||
+                        ((abs(c.r-eraseColor[i].r) < threshold) && (abs(c.g-eraseColor[i].g) < threshold) && (abs(c.b-eraseColor[i].b) < threshold))){
+                            mp[(camWidth * y + x) * 4 + 3] = 0;
+                            break;
+                        }else{
+                            mp[(camWidth * y + x) * 4 + 3] = 255;
+                    }
+                }
+
+                //指定色を描画
+                for(int i = 0; i < COLNUM; i++){
+                    if((abs(c.r - drawColor[i].r)) < 5 && (abs(c.r - drawColor[i].r)) && (abs(c.r - drawColor[i].r))){
+                        mp[(camWidth * y + x) * 4 + 3] = 255;
+                    }
                 }
             }
         }
     }
-
+    
     //透過した奴をimg(本体)に代入
     img.setFromPixels(mp,camWidth,camHeight,OF_IMAGE_COLOR_ALPHA);
     
@@ -115,17 +134,28 @@ void ofApp::draw() {
 
     free(mp);
     //ofDisableAlphaBlending();
-    frame++;
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
     
-    if(key == 'v') {
-        mashiFlg = true;
+    if(key == 'c'){
+        for(int i=0; i<30; i++){
+            eraseColor[i] = (0,170+i*10,0);
+            drawColor[i] = (0,0,0);
+        }
     }
-    if(key == 'd') {
-        mashiFlg = false;
+    if(key == 'e'){
+        clickFlg = true;
+    }
+    if(key == 'd'){
+        clickFlg = false;
+    }
+    if(key == ';'){
+        threshold++;
+    }
+    if(key == '-'){
+        threshold--;
     }
 }
 
@@ -147,8 +177,17 @@ void ofApp::mouseDragged(int x, int y, int button) {
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button) {
     
-    clickColor = img.getColor(x , y);
-    
+    if(clickFlg){
+        if(eraseId == COLNUM){eraseId = 0;}
+        eraseColor[eraseId] = img.getColor(x , y);
+        erasePos[eraseId] = ofPoint(x,y);
+        eraseId++;
+    }else{
+        if(drawId == COLNUM){drawId = 0;}
+        drawColor[drawId] = img.getColor(x,y);
+        drawPos[drawId] = ofPoint(x,y);
+        drawId++;
+    }
 }
 
 //--------------------------------------------------------------
