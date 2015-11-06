@@ -54,8 +54,8 @@ void ofApp::draw() {
         mashiCount += 1;
         
         // 過去の映像表示
-        for(int i=0; i<5; i++){
-            for(int j=0; j<2; j++){
+        for(int i=0; i<SAVEMAX/5; i++){
+            for(int j=0; j<5; j++){
                 if(cap[i+5*j][mashiCount].bAllocated()){
                     cap[i+5*j][mashiCount].draw(camWidth/5*i, camHeight+camHeight/5*j, camWidth/5, camHeight/5);
                     cap[i+5*j][mashiCount].draw(0,0);
@@ -124,7 +124,7 @@ void ofApp::draw() {
 
     //30フレームごとに次のバッファへ。最大10
     if(capCount >= CAPMAX) {
-        if(capNum == 9){
+        if(capNum == SAVEMAX-1){
             capNum = 0;
         }else{
             capNum++;

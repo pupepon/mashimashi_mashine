@@ -21,8 +21,9 @@ class ofApp : public ofBaseApp{
     
     
         ofImage  img;
-        static const int CAPMAX = 8;
+        static const int CAPMAX = 3;
         static const int COLNUM = 10;
+        static const int SAVEMAX = 30;
         ofVideoGrabber  vidGrabber;
         ofTexture       videoTexture;
         int             camWidth;
@@ -33,7 +34,7 @@ class ofApp : public ofBaseApp{
         int             mashiCount;
         int             capNum;
         bool            clickFlg;
-        ofImage         cap[30][CAPMAX];
+        ofImage         cap[SAVEMAX][CAPMAX];
         ofImage         sato;
         ofColor         eraseColor[COLNUM];
         ofColor         drawColor[COLNUM];
