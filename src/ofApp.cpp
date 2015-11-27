@@ -1,6 +1,5 @@
 #include "ofApp.h"
-
-
+//1フレームずれてる！！！
 
 //--------------------------------------------------------------
 void ofApp::setup() {
@@ -13,14 +12,19 @@ void ofApp::setup() {
     vidGrabber.setDeviceID(0);
     vidGrabber.initGrabber(camWidth, camHeight);
     ofSetVerticalSync(true);
-    capFlg = false;
-    capCount = 0;
-    mashiNum = 0;
-    mashiCount = 0;
-    eraseId = 0;
-    drawId = 0;
-    clickFlg = true;
-    threshold = 30;
+    capFlg          = false;
+    capCount        = 0;
+    capNum          = 0;
+    eraseId         = 0;
+    drawId          = 0;
+    copyCapNum      = 0;
+    copyCapCount    = 0;
+    backPastNum     = 0;
+    backPastCount   = 0;
+    pastNum         = 0;
+    pastCount       = 0;
+    clickFlg        = true;
+    threshold       = 30;
     for(int i=0; i<COLNUM; i++){
         eraseColor[i] = ofColor(0,100+i*5,0);
         drawColor[i] = ofColor(0,0,0);
@@ -29,101 +33,47 @@ void ofApp::setup() {
     }
     capNum = 0;
    // cap.allocate(camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
-  
+    ofxGuiSetTextPadding(4);
+    ofxGuiSetDefaultWidth(300);
+    ofxGuiSetDefaultHeight(18);
+    gui.setup();
+    gui.add(sld.setup("fugishige", 0, 0, 10));
+    gui.add(b.setup("fugizihe2"));
+    gui.add(t.setup("toggle", false));
+    gui.add(colSld.setup("color",ofColor(255,255,255),ofColor(0,0),ofColor(255,255)));
 }
 
 //--------------------------------------------------------------
 void ofApp::update() {
     
-    vidGrabber.update();
+
 }
 
 //--------------------------------------------------------------
 void ofApp::draw() {
-    
+    vidGrabber.update();
     ofEnableAlphaBlending();
-    
-    ofSetColor(255);
-    sato.draw(0,0);
     //最初初期化してないの描画してるかも
-    if(img.bAllocated()){img.draw(0,0);}
-    //vidGrabber.draw(0, 0);
-    
-    if (cap[mashiNum][mashiCount].bAllocated()) {
-        //cap[mashiNum][mashiCount].draw(0,0);
-        mashiCount += 1;
-        
-        // 過去の映像表示
-        for(int i=0; i<SAVEMAX/5; i++){
-            for(int j=0; j<5; j++){
-                if(cap[i+5*j][mashiCount].bAllocated()){
-                    cap[i+5*j][mashiCount].draw(camWidth/5*i, camHeight+camHeight/5*j, camWidth/5, camHeight/5);
-                    cap[i+5*j][mashiCount].draw(0,0);
-                }
-            }
-        }
+    //img.draw(0,0);
 
-        if (mashiCount >= CAPMAX-1) {
-            mashiCount = 0;
-            if(mashiNum == 9){
-                mashiNum = 0;
-            }else{
-            mashiNum++;
-            }
-        }
-    }
-    for(int i =0; i<COLNUM/5; i++){
-        for(int j = 0; j<5; j++){
-            ofSetColor(eraseColor[i*5+j]);
-            ofRect(camWidth+80*j,0+i*50,50,50);
-            ofSetColor(drawColor[i*5+j]);
-            ofRect(camWidth+80*j,300+i*50,50,50);
-        }
-    }
     unsigned char* cp = vidGrabber.getPixels();
-    unsigned char* mp;
-    mp = (unsigned char*)malloc(camWidth * camHeight * 4);
-    
-    //mpに現在フレームを透過して代入
-    if (img.bAllocated()) {
-        for (int y = 0; y < camHeight; y++) {
-            for (int x = 0; x < camWidth; x++) {
-                ofColor c = img.getColor(x, y);
-                ofSetColor(c.r, c.g, c.b);
-                mp[(camWidth * y + x) * 4 + 2] = cp[(camWidth * y + x) * 3 + 3];
-                mp[(camWidth * y + x) * 4 + 2] = cp[(camWidth * y + x) * 3 + 2];
-                mp[(camWidth * y + x) * 4 + 1] = cp[(camWidth * y + x) * 3 + 1];
-                mp[(camWidth * y + x) * 4] = cp[(camWidth * y + x) * 3];
-                //指定色を透過
-                for(int i = 0; i<COLNUM; i++){
-                        if(((c.g > c.r && c.g > c.b ) && (c.g-c.r > 30)) ||
-                        ((abs(c.r-eraseColor[i].r) < threshold) && (abs(c.g-eraseColor[i].g) < threshold) && (abs(c.b-eraseColor[i].b) < threshold))){
-                            mp[(camWidth * y + x) * 4 + 3] = 0;
-                            break;
-                        }else{
-                            mp[(camWidth * y + x) * 4 + 3] = 255;
-                    }
-                }
-
-                //指定色を描画
-                for(int i = 0; i < COLNUM; i++){
-                    if((abs(c.r - drawColor[i].r)) < 5 && (abs(c.r - drawColor[i].r)) && (abs(c.r - drawColor[i].r))){
-                        mp[(camWidth * y + x) * 4 + 3] = 255;
-                    }
-                }
-            }
-        }
-    }
-    
-    //透過した奴をimg(本体)に代入
-    img.setFromPixels(mp,camWidth,camHeight,OF_IMAGE_COLOR_ALPHA);
+    img.setFromPixels(cp,camWidth,camHeight,OF_IMAGE_COLOR);
     
     //透過した奴をcap配列(分身)に代入
-    cap[capNum][capCount].setFromPixels(mp, camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
+    //cout << capNum << endl;
+    cap[capNum][capCount].setFromPixels(onAlpha(cp), camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
+    drawCap();
+    drawCol();
+    drawSub();
+    drawPast();
+    drawPastBack();
+    //drawLocus();
+    ofSetColor(colSld);
+    cap[capNum][capCount].draw(0,0);
+    
     capCount++;
-
-    //30フレームごとに次のバッファへ。最大10
-    if(capCount >= CAPMAX) {
+    //CAPMAXフレームごとに次のバッファへ。
+    if(capCount == CAPMAX) {
         if(capNum == SAVEMAX-1){
             capNum = 0;
         }else{
@@ -131,15 +81,15 @@ void ofApp::draw() {
         }
         capCount = 0;
     }
-
-    free(mp);
+    
     //ofDisableAlphaBlending();
+    gui.draw();
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key) {
     
-    if(key == 'c'){
+    if(key == 'r'){
         for(int i=0; i<30; i++){
             eraseColor[i] = (0,170+i*10,0);
             drawColor[i] = (0,0,0);
@@ -156,6 +106,22 @@ void ofApp::keyPressed(int key) {
     }
     if(key == '-'){
         threshold--;
+    }
+    if(key == ' '){
+    }
+    if(key == 'c'){
+        for(int i=0; i< SAVEMAX; i++){
+            for(int j=0; j<CAPMAX; j++){
+                capDam[i][j] = cap[i][j];
+            }
+        }
+        copyCapCount    = capCount;
+        pastCount       = capCount;
+        backPastCount   = capCount;
+        
+        copyCapNum      = capNum;
+        pastNum         = capNum;
+        backPastNum     = capNum;
     }
 }
 
@@ -179,7 +145,7 @@ void ofApp::mousePressed(int x, int y, int button) {
     
     if(clickFlg){
         if(eraseId == COLNUM){eraseId = 0;}
-        eraseColor[eraseId] = img.getColor(x , y);
+        eraseColor[eraseId] = img.getColor(x,y);
         erasePos[eraseId] = ofPoint(x,y);
         eraseId++;
     }else{
@@ -208,4 +174,130 @@ void ofApp::gotMessage(ofMessage msg) {
 //--------------------------------------------------------------
 void ofApp::dragEvent(ofDragInfo dragInfo) {
 
+}
+
+unsigned char* ofApp::onAlpha(unsigned char *cp){
+
+    //mpに現在フレームを透過して代入
+    unsigned char* mp;
+    mp = (unsigned char*)malloc(camWidth * camHeight * 4);
+    if (img.bAllocated()) {
+        for (int y = 0; y < camHeight; y++) {
+            for (int x = 0; x < camWidth; x++) {
+                ofColor c = img.getColor(x, y);
+                ofSetColor(c.r, c.g, c.b);
+                mp[(camWidth * y + x) * 4 + 2] = c.b;
+                mp[(camWidth * y + x) * 4 + 1] = c.g;
+                mp[(camWidth * y + x) * 4]     = c.r;
+                mp[(camWidth * y + x) * 4 + 3] = 255;
+                //指定色を透過
+                for(int i = 0; i<COLNUM; i++){
+                    if(((c.g > c.r && c.g > c.b ) && (c.g-c.r > threshold)) ||
+                       ((abs(c.r-eraseColor[i].r) < threshold) && (abs(c.g-eraseColor[i].g) < threshold) && (abs(c.b-eraseColor[i].b) < threshold))){
+                        mp[(camWidth * y + x) * 4 + 3] = 0;
+                        break;
+                    }
+                }
+                
+                //指定色を描画
+                for(int i = 0; i < COLNUM; i++){
+                    if((abs(c.r - drawColor[i].r)) < 5 && (abs(c.r - drawColor[i].r)) && (abs(c.r - drawColor[i].r))){
+                        mp[(camWidth * y + x) * 4 + 3] = 255;
+                    }
+                }
+            }
+        }
+    }
+    return mp;
+    free(mp);
+}
+
+void ofApp::drawCol(){
+    for(int i =0; i<COLNUM/5; i++){
+        for(int j = 0; j<5; j++){
+            ofSetColor(eraseColor[i*5+j]);
+            ofRect(camWidth+80*j,camHeight+0+i*50,50,50);
+            ofSetColor(drawColor[i*5+j]);
+            ofRect(camWidth+80*j,camHeight+100+i*50,50,50);
+        }
+    }
+}
+
+void ofApp::drawCap(){
+    int num = capNum;
+    ofColor col = colSld;
+    for(int i=0; i<SAVEMAX; i++){
+        num--;
+        if(num < 0){num = SAVEMAX-1;}
+        if(cap[num][CAPMAX-1].bAllocated()){
+            col.a = SAVEMAX - 1 - i * 255/SAVEMAX;
+            ofSetColor(col);
+            cout << num << endl;
+            cap[num][capCount].draw(0,0);
+        }
+    }
+}
+
+void ofApp::drawPastBack(){
+    ofSetColor(colSld);
+    
+    backPastCount--;
+    if(backPastCount == -1){
+        backPastCount = CAPMAX-1;
+        
+        if(backPastNum == 0){
+            backPastNum = SAVEMAX-1;
+        }else{
+            backPastNum--;
+        }
+    }
+    
+    if(capDam[backPastNum][backPastCount].bAllocated()){
+        capDam[backPastNum][backPastCount].draw(camWidth*2,0);
+    }
+}
+
+void ofApp::drawPast(){
+    ofSetColor(colSld);
+    if(capDam[pastNum][pastCount].bAllocated()){
+        capDam[pastNum][pastCount].draw(camWidth,0);
+        pastCount++;
+    }
+    
+    if(pastCount == CAPMAX){
+        pastCount = 0;
+        if(pastNum == SAVEMAX-1){
+            pastNum = 0;
+        }else{
+            pastNum++;
+        }
+    }
+}
+
+void ofApp::drawLocus(){
+    int num = capNum;
+    locusCol = colSld;
+    for(int i=0; i<SAVEMAX; i++){
+        num--;
+        if(num < 0){num = SAVEMAX-1;}
+        if(cap[num][CAPMAX-1].bAllocated()){
+            locusCol.a = SAVEMAX - 1 - i * 255/SAVEMAX;
+            ofSetColor(locusCol);
+            cap[num][CAPMAX-1].draw(0,0);
+        }
+    }
+}
+
+void ofApp::drawSub(){
+ofSetColor(colSld);
+    if (cap[capNum][capCount].bAllocated()) {
+        // 過去の映像表示
+        for(int i=0; i<SAVEMAX/5; i++){
+            for(int j=0; j<5; j++){
+                if(cap[i*5+j][capCount].bAllocated()){
+                    cap[i*5+j][capCount].draw(camWidth/5*j, camHeight+camHeight/5*i, camWidth/5, camHeight/5);
+                }
+            }
+        }
+    }
 }
