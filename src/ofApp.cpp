@@ -12,7 +12,6 @@ void ofApp::setup() {
     vidGrabber.setDeviceID(0);
     vidGrabber.initGrabber(camWidth, camHeight);
     ofSetVerticalSync(true);
-    capFlg          = false;
     capCount        = 0;
     capNum          = 0;
     eraseId         = 0;
@@ -28,8 +27,6 @@ void ofApp::setup() {
     for(int i=0; i<COLNUM; i++){
         eraseColor[i] = ofColor(0,100+i*5,0);
         drawColor[i] = ofColor(0,0,0);
-        erasePos[i] = ofPoint(0,0);
-        erasePos[i] = ofPoint(0,0);
     }
     capNum = 0;
    // cap.allocate(camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
@@ -37,15 +34,15 @@ void ofApp::setup() {
     ofxGuiSetDefaultWidth(300);
     ofxGuiSetDefaultHeight(18);
     gui.setup();
-    gui.add(sld.setup("fugishige", 0, 0, 10));
-    gui.add(b.setup("fugizihe2"));
+    gui.add(capSld.setup("capmax", 10, 1, CAPMAX));
+    gui.add(saveSld.setup("savemax", 5, 1, SAVEMAX));
+    gui.add(random.setup("random"));
     gui.add(t.setup("toggle", false));
     gui.add(colSld.setup("color",ofColor(255,255,255),ofColor(0,0),ofColor(255,255)));
 }
 
 //--------------------------------------------------------------
 void ofApp::update() {
-    
 
 }
 
@@ -62,26 +59,26 @@ void ofApp::draw() {
     //透過した奴をcap配列(分身)に代入
     //cout << capNum << endl;
     cap[capNum][capCount].setFromPixels(onAlpha(cp), camWidth, camHeight, OF_IMAGE_COLOR_ALPHA);
-    drawCap();
+    //drawCap();
     drawCol();
     drawSub();
     drawPast();
     drawPastBack();
     //drawLocus();
+    drawRandom();
     ofSetColor(colSld);
-    cap[capNum][capCount].draw(0,0);
+    //cap[capNum][capCount].draw(0,0);
     
     capCount++;
-    //CAPMAXフレームごとに次のバッファへ。
-    if(capCount == CAPMAX) {
-        if(capNum == SAVEMAX-1){
+    //capmaxフレームごとに次のバッファへ。
+    if(capCount == capmax) {
+        if(capNum == savemax-1){
             capNum = 0;
         }else{
             capNum++;
         }
         capCount = 0;
     }
-    
     //ofDisableAlphaBlending();
     gui.draw();
 }
@@ -90,9 +87,28 @@ void ofApp::draw() {
 void ofApp::keyPressed(int key) {
     
     if(key == 'r'){
-        for(int i=0; i<30; i++){
-            eraseColor[i] = (0,170+i*10,0);
-            drawColor[i] = (0,0,0);
+        for(int i=0; i<COLNUM; i++){
+            savemax = saveSld;
+            capmax = capSld;
+            eraseColor[i] = ofColor(0,100+i*5,0);
+            drawColor[i]  = ofColor(0,0,0);
+            capCount        = 0;
+            capNum          = 0;
+            eraseId         = 0;
+            drawId          = 0;
+            copyCapNum      = 0;
+            copyCapCount    = 0;
+            backPastNum     = 0;
+            backPastCount   = 0;
+            pastNum         = 0;
+            pastCount       = 0;
+            clickFlg        = true;
+            threshold       = 30;
+            for(int i=0; i<SAVEMAX; i++){
+                for(int j=0; j<CAPMAX; j++){
+                    cap[i][j].clear();
+                }
+            }
         }
     }
     if(key == 'e'){
@@ -110,8 +126,8 @@ void ofApp::keyPressed(int key) {
     if(key == ' '){
     }
     if(key == 'c'){
-        for(int i=0; i< SAVEMAX; i++){
-            for(int j=0; j<CAPMAX; j++){
+        for(int i=0; i< savemax; i++){
+            for(int j=0; j<capmax; j++){
                 capDam[i][j] = cap[i][j];
             }
         }
@@ -146,12 +162,10 @@ void ofApp::mousePressed(int x, int y, int button) {
     if(clickFlg){
         if(eraseId == COLNUM){eraseId = 0;}
         eraseColor[eraseId] = img.getColor(x,y);
-        erasePos[eraseId] = ofPoint(x,y);
         eraseId++;
     }else{
         if(drawId == COLNUM){drawId = 0;}
         drawColor[drawId] = img.getColor(x,y);
-        drawPos[drawId] = ofPoint(x,y);
         drawId++;
     }
 }
@@ -208,8 +222,8 @@ unsigned char* ofApp::onAlpha(unsigned char *cp){
             }
         }
     }
-    return mp;
     free(mp);
+    return mp;
 }
 
 void ofApp::drawCol(){
@@ -226,13 +240,14 @@ void ofApp::drawCol(){
 void ofApp::drawCap(){
     int num = capNum;
     ofColor col = colSld;
-    for(int i=0; i<SAVEMAX; i++){
+    for(int i=0; i<savemax; i++){
         num--;
-        if(num < 0){num = SAVEMAX-1;}
-        if(cap[num][CAPMAX-1].bAllocated()){
-            col.a = SAVEMAX - 1 - i * 255/SAVEMAX;
+        if(num < 0){num = savemax-1;}
+        if(cap[num][capmax-1].bAllocated()){
+            col.a = (savemax -1 - i) * 255/savemax;
             ofSetColor(col);
-            cout << num << endl;
+            //cout << num << endl;
+            cout << col << endl;
             cap[num][capCount].draw(0,0);
         }
     }
@@ -243,15 +258,14 @@ void ofApp::drawPastBack(){
     
     backPastCount--;
     if(backPastCount == -1){
-        backPastCount = CAPMAX-1;
+        backPastCount = capmax-1;
         
         if(backPastNum == 0){
-            backPastNum = SAVEMAX-1;
+            backPastNum = savemax-1;
         }else{
             backPastNum--;
         }
     }
-    
     if(capDam[backPastNum][backPastCount].bAllocated()){
         capDam[backPastNum][backPastCount].draw(camWidth*2,0);
     }
@@ -264,9 +278,9 @@ void ofApp::drawPast(){
         pastCount++;
     }
     
-    if(pastCount == CAPMAX){
+    if(pastCount == capmax){
         pastCount = 0;
-        if(pastNum == SAVEMAX-1){
+        if(pastNum == savemax-1){
             pastNum = 0;
         }else{
             pastNum++;
@@ -277,13 +291,13 @@ void ofApp::drawPast(){
 void ofApp::drawLocus(){
     int num = capNum;
     locusCol = colSld;
-    for(int i=0; i<SAVEMAX; i++){
+    for(int i=0; i<savemax; i++){
         num--;
-        if(num < 0){num = SAVEMAX-1;}
-        if(cap[num][CAPMAX-1].bAllocated()){
-            locusCol.a = SAVEMAX - 1 - i * 255/SAVEMAX;
+        if(num < 0){num = savemax-1;}
+        if(cap[num][capmax-1].bAllocated()){
+            locusCol.a = (savemax -1 - i) * 255/savemax;
             ofSetColor(locusCol);
-            cap[num][CAPMAX-1].draw(0,0);
+            cap[num][capmax-1].draw(0,0);
         }
     }
 }
@@ -292,7 +306,7 @@ void ofApp::drawSub(){
 ofSetColor(colSld);
     if (cap[capNum][capCount].bAllocated()) {
         // 過去の映像表示
-        for(int i=0; i<SAVEMAX/5; i++){
+        for(int i=0; i<savemax/5; i++){
             for(int j=0; j<5; j++){
                 if(cap[i*5+j][capCount].bAllocated()){
                     cap[i*5+j][capCount].draw(camWidth/5*j, camHeight+camHeight/5*i, camWidth/5, camHeight/5);
@@ -300,4 +314,14 @@ ofSetColor(colSld);
             }
         }
     }
+}
+
+void ofApp::drawRandom(){
+    if(random){
+        randPos.x = ofRandom(camWidth/4, camWidth/4*3);
+        randPos.y = ofRandom(camHeight/4,camHeight/4*3);
+        randScale = ofRandom(0,1);
+    }
+    cap[0][capCount].draw(randPos.x-camWidth*randScale/2,randPos.y-camWidth*randScale/2, camWidth*randScale, camHeight*randScale);
+    
 }

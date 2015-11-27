@@ -26,10 +26,10 @@ class ofApp : public ofBaseApp{
         //過去の映像を描画
         void drawCap();
     
-        //'c'を押した時点の過去の映像を逆再生
+        //'c'を押した時点の映像を逆再生
         void drawPastBack();
     
-        //'c'を押した時点の過去の映像を再生
+        //'c'を押した時点の映像を再生
         void drawPast();
     
         //過去の静止画を描画
@@ -38,10 +38,15 @@ class ofApp : public ofBaseApp{
         //cap配列を描画(小さく５個並んでる奴)
         void drawSub();
     
+        void drawRandom();
+    
         ofImage  img;
-        static const int CAPMAX = 10;
+    
+        int capmax = 10;
+        int savemax = 5;
+        static const int CAPMAX = 120;
+        static const int SAVEMAX = 10;
         static const int COLNUM = 10;
-        static const int SAVEMAX = 5;
         ofVideoGrabber  vidGrabber;
         ofTexture       videoTexture;
         int             camWidth;
@@ -64,15 +69,16 @@ class ofApp : public ofBaseApp{
         ofColor         locusCol;
         ofColor         eraseColor[COLNUM];
         ofColor         drawColor[COLNUM];
-        ofPoint         erasePos[COLNUM];
-        ofPoint         drawPos[COLNUM];
         int             eraseId;
         int             drawId;
         int             threshold;
+        float           randScale;
+        ofPoint         randPos;
     
         ofxPanel gui;
-        ofxIntSlider sld;
+        ofxIntSlider capSld;
+        ofxIntSlider saveSld;
         ofxColorSlider colSld;
-        ofxButton b;
+        ofxButton random;
         ofxToggle t;
 };
